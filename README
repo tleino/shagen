@@ -1,0 +1,15 @@
+This is a simple program to generate passwords based on a master
+passphrase.
+
+Because all that is generated is based on a master passphrase, it
+does not need to store anything. The security is therefore highly
+relying on the strength of the master passphrase. The master
+passphrase's strength should at least be equal to a 6-word diceware
+passphrase which is 77.5 bits.
+
+How it works:
+
+We use one-way SHA256 cryptographic hash function in combination
+with the master passphrase and account details. The SHA256 gives
+us 256 bits to work with. We extract 224 bits. These bits are then
+mapped to a password symbol list giving us ~76 bits passwords.
