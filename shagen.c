@@ -16,6 +16,7 @@
 
 #ifdef __OpenBSD__
 #define HAVE_PLEDGE
+#define HAVE_EXPLICIT_BZERO
 #endif
 
 #include <openssl/sha.h>
@@ -28,6 +29,10 @@
 #include <stdio.h>
 #include <err.h>
 #include <string.h>
+
+#ifndef HAVE_EXPLICIT_BZERO
+#define explicit_bzero(ptr, sz) memset(ptr, '\0', sz)
+#endif
 
 int
 main(int argc, char **argv)
