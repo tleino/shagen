@@ -41,11 +41,7 @@ main(int argc, char **argv)
 	int bits, i;
 
 #ifdef HAVE_PLEDGE
-	/*
-	 * We need 'rpath' and 'wpath' because readpassphrase(3) uses
-	 * O_RDWR for tty and we wish to read from a tty.
-	 */
-	if (pledge("stdio rpath wpath tty", NULL) == -1)
+	if (pledge("stdio tty", NULL) == -1)
 		err(1, "pledge");
 #endif
 
