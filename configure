@@ -2,14 +2,13 @@
 
 check_system() {
 	SYSTEM_CFLAGS=
+	SYSTEM_LDFLAGS=-lcrypto
 	case $(uname) in
 		Linux )
-			SYSTEM_CFLAGS="-DPOSIX_C_SOURCE=200809L"
-			SYSTEM_LDFLAGS="-lopenssl"
+			SYSTEM_CFLAGS="-D_XOPEN_SOURCE=500"
 		;;
 		OpenBSD )
-			SYSTEM_CFLAGS=
-			SYSTEM_LDFLAGS="-lcrypto"
+			SYSTEM_CFLAGS="-DHAVE_PLEDGE -DHAVE_READPASSPHRASE -DHAVE_EXPLICIT_BZERO"
 		;;
 	esac
 	echo "system: $(uname)"

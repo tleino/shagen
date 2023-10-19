@@ -14,21 +14,16 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifdef __OpenBSD__
-#define HAVE_PLEDGE
-#define HAVE_EXPLICIT_BZERO
+#include <openssl/sha.h>
+
+#ifdef HAVE_READPASSPHRASE
+#include <readpassphrase.h>
 #endif
 
-#include <openssl/sha.h>
-#include <readpassphrase.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <err.h>
 #include <string.h>
-
-#ifndef HAVE_EXPLICIT_BZERO
-#define explicit_bzero(ptr, sz) memset(ptr, '\0', sz)
-#endif
 
 void generate_passphrase(FILE *fp, const char *file, unsigned char *digest);
 
@@ -41,12 +36,15 @@ usage(const char *prog)
 	return 1;
 }
 
-
 int
 main(int argc, char **argv)
 {
 	const char *domain, *account, *version;
+#ifdef HAVE_READPASSPHRASE
 	char master[128], repeat[128];
+#else
+	char *masterp, *repeatp;
+#endif
 	unsigned char digest[SHA256_DIGEST_LENGTH];
 	char key[256];
 	char symbols[26+26+10] = 
@@ -56,6 +54,7 @@ main(int argc, char **argv)
 	const char *prog, *file = NULL;
 	FILE *fp = NULL;
 	char qflag;
+	SHA256_CTX ctx;
 
 #ifdef HAVE_PLEDGE
 	if (pledge("stdio rpath tty", NULL) == -1)
@@ -97,14 +96,21 @@ main(int argc, char **argv)
 	if (argc)
 		version = *argv++;
 
+#ifndef HAVE_READPASSPHRASE
+	masterp = getpass("Master passphrase: ");
+	if (!qflag)
+		repeatp = getpass("Repeat master passphrase: ");
+#else
 	if (readpassphrase("Master passphrase: ", master, sizeof(master),
 	    RPP_REQUIRE_TTY | RPP_SEVENBIT) == NULL)
 		errx(1, "unable to read passphrase");
-
 	if (!qflag)
 		if (readpassphrase("Repeat master passphrase: ", repeat,
 		    sizeof(repeat), RPP_REQUIRE_TTY | RPP_SEVENBIT) == NULL)
 			errx(1, "unable to read passphrase");
+	masterp = master;
+	repeatp = repeat;
+#endif
 
 #ifdef HAVE_PLEDGE
 	if (pledge("stdio", NULL) == -1)
@@ -112,18 +118,27 @@ main(int argc, char **argv)
 #endif
 
 	if (!qflag) {
-		if (strcmp(master, repeat) != 0)
+		if (strcmp(masterp, repeatp) != 0)
 			errx(1, "did not match");
+#ifdef HAVE_READPASSPHRASE
 		explicit_bzero(repeat, sizeof(repeat));
+#endif
 	}
 
 	if (snprintf(key, sizeof(key), "%s %s %s %s",
-	    domain, account, version, master) >= sizeof(key))
+	    domain, account, version, masterp) >= sizeof(key))
 		errx(1, "key truncated");
+#ifdef HAVE_READPASSPHRASE
 	explicit_bzero(master, sizeof(master));
+#endif
 
-	SHA256((unsigned char *) key, strlen(key), digest);
+	SHA256_Init(&ctx);
+	SHA256_Update(&ctx, key, strlen(key));
+	SHA256_Final(digest, &ctx);
+
+#ifdef HAVE_READPASSPHRASE
 	explicit_bzero(key, sizeof(key));
+#endif
 
 	for (i = 0; i < 14; i++) {
 		bits = digest[i*2];

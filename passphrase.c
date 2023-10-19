@@ -1,5 +1,6 @@
 #include <err.h>
 #include <stdio.h>
+#include <stdint.h>
 
 void
 generate_passphrase(FILE *fp, const char *file, unsigned char *digest)
