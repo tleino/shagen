@@ -2,7 +2,7 @@ CFLAGS=-Wall -pedantic -ansi
 LDFLAGS=
 LIBS=-lcrypto
 PROG=shagen
-SRC=shagen.c
+SRC=passphrase.c shagen.c
 OBJ=$(SRC:.c=.o)
 $(PROG): $(OBJ)
 	$(CC) -o$(PROG) $(OBJ) $(LDFLAGS) $(LIBS)

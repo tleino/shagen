@@ -21,11 +21,7 @@
 
 #include <openssl/sha.h>
 #include <readpassphrase.h>
-
-#ifdef HAVE_PLEDGE
 #include <unistd.h>
-#endif
-
 #include <stdio.h>
 #include <err.h>
 #include <string.h>
@@ -33,6 +29,17 @@
 #ifndef HAVE_EXPLICIT_BZERO
 #define explicit_bzero(ptr, sz) memset(ptr, '\0', sz)
 #endif
+
+void generate_passphrase(FILE *fp, const char *file, unsigned char *digest);
+
+static int
+usage(const char *prog)
+{
+	fprintf(stderr, "usage: %s [-f wordlist] domain account [version]\n",
+	    prog);
+	return 1;
+}
+
 
 int
 main(int argc, char **argv)
@@ -44,22 +51,46 @@ main(int argc, char **argv)
 	char symbols[26+26+10] = 
 	    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 	int bits, i;
+	char ch;
+	const char *prog, *file = NULL;
+	FILE *fp = NULL;
+
+#ifdef HAVE_PLEDGE
+	if (pledge("stdio rpath tty", NULL) == -1)
+		err(1, "pledge");
+#endif
+
+	prog = *argv;
+	while ((ch = getopt(argc, argv, "f:")) != -1) {
+		switch (ch) {
+		case 'f':
+			file = optarg;
+			if ((fp = fopen(file, "r")) == NULL)
+				err(1, "%s", file);
+			break;
+		default:
+			return usage(prog);
+		}
+	}
 
 #ifdef HAVE_PLEDGE
 	if (pledge("stdio tty", NULL) == -1)
 		err(1, "pledge");
 #endif
 
-	if (argc != 3 && argc != 4) {
-		fprintf(stderr, "Usage: %s DOMAIN ACCOUNT [VERSION]\n", *argv);
-		return 1;
-	}
+	argc -= optind;
+	argv += optind;
 
-	domain = *++argv;
-	account = *++argv;
+	if (argc < 2)
+		return usage(prog);
+
+	domain = *argv++;
+	argc--;
+	account = *argv++;
+	argc--;
 	version = "1";
-	if (argc == 4)
-		version = *++argv;
+	if (argc)
+		version = *argv++;
 
 	if (readpassphrase("Master passphrase: ", master, sizeof(master),
 	    RPP_REQUIRE_TTY | RPP_SEVENBIT) == NULL)
@@ -94,5 +125,12 @@ main(int argc, char **argv)
 			putchar('-');
 	}
 	putchar('\n');
+
+	if (!fp)
+		return 0;
+
+	generate_passphrase(fp, file, digest);
+	fclose(fp);
+
 	return 0;
 }
