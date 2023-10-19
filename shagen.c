@@ -35,7 +35,8 @@ void generate_passphrase(FILE *fp, const char *file, unsigned char *digest);
 static int
 usage(const char *prog)
 {
-	fprintf(stderr, "usage: %s [-f wordlist] domain account [version]\n",
+	fprintf(stderr,
+	    "usage: %s [-q] [-f wordlist] domain account [version]\n",
 	    prog);
 	return 1;
 }
@@ -54,6 +55,7 @@ main(int argc, char **argv)
 	char ch;
 	const char *prog, *file = NULL;
 	FILE *fp = NULL;
+	char qflag;
 
 #ifdef HAVE_PLEDGE
 	if (pledge("stdio rpath tty", NULL) == -1)
@@ -61,8 +63,11 @@ main(int argc, char **argv)
 #endif
 
 	prog = *argv;
-	while ((ch = getopt(argc, argv, "f:")) != -1) {
+	while ((ch = getopt(argc, argv, "qf:")) != -1) {
 		switch (ch) {
+		case 'q':
+			qflag = 1;
+			break;
 		case 'f':
 			file = optarg;
 			if ((fp = fopen(file, "r")) == NULL)
@@ -96,18 +101,21 @@ main(int argc, char **argv)
 	    RPP_REQUIRE_TTY | RPP_SEVENBIT) == NULL)
 		errx(1, "unable to read passphrase");
 
-	if (readpassphrase("Repeat master passphrase: ", repeat,
-	    sizeof(repeat), RPP_REQUIRE_TTY | RPP_SEVENBIT) == NULL)
-		errx(1, "unable to read passphrase");
+	if (!qflag)
+		if (readpassphrase("Repeat master passphrase: ", repeat,
+		    sizeof(repeat), RPP_REQUIRE_TTY | RPP_SEVENBIT) == NULL)
+			errx(1, "unable to read passphrase");
 
 #ifdef HAVE_PLEDGE
 	if (pledge("stdio", NULL) == -1)
 		err(1, "pledge");
 #endif
 
-	if (strcmp(master, repeat) != 0)
-		errx(1, "did not match");
-	explicit_bzero(repeat, sizeof(repeat));
+	if (!qflag) {
+		if (strcmp(master, repeat) != 0)
+			errx(1, "did not match");
+		explicit_bzero(repeat, sizeof(repeat));
+	}
 
 	if (snprintf(key, sizeof(key), "%s %s %s %s",
 	    domain, account, version, master) >= sizeof(key))
