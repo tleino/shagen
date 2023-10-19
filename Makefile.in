@@ -1,0 +1,20 @@
+CFLAGS=-Wall -pedantic -ansi @SYSTEM_CFLAGS@
+LDFLAGS= @SYSTEM_LDFLAGS@
+PROG=shagen
+SRC=passphrase.c shagen.c
+OBJ=$(SRC:.c=.o)
+
+BINDIR = @PREFIX@/bin
+
+INSTALL ?= install
+
+$(PROG): $(OBJ)
+	$(CC) -o$(PROG) $(OBJ) $(LDFLAGS)
+.c.o:
+	$(CC) $(CFLAGS) -c $<
+clean:
+	rm -f $(OBJ) $(PROG)
+install: $(PROG)
+	$(INSTALL) -Ds $(PROG) $(DESTDIR)$(BINDIR)/$(PROG)
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/$(PROG)

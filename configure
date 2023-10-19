@@ -1,0 +1,43 @@
+#!/bin/sh
+
+check_system() {
+	SYSTEM_CFLAGS=
+	case $(uname) in
+		Linux )
+			SYSTEM_CFLAGS="-DPOSIX_C_SOURCE=200809L"
+			SYSTEM_LDFLAGS="-lopenssl"
+		;;
+		OpenBSD )
+			SYSTEM_CFLAGS=
+			SYSTEM_LDFLAGS="-lcrypto"
+		;;
+	esac
+	echo "system: $(uname)"
+}
+
+check_args() {
+	while [ $# -ne 0 ] ; do
+		case $1 in
+			-* )
+				if [ "$1" != "--help" ] ; then
+					echo "$0: unknown option: $1"
+				fi
+				echo "usage: $0 [prefix]"
+				exit 1
+			;;
+			* ) prefix=$1 ;;
+		esac
+		shift
+	done
+	echo "prefix=${prefix}"
+}
+
+prefix="/usr/local"
+check_args $*
+check_system
+echo >Makefile
+sed \
+	-e "s|@PREFIX@|${prefix}|g" \
+	-e "s|@SYSTEM_CFLAGS@|${SYSTEM_CFLAGS}|g" \
+	-e "s|@SYSTEM_LDFLAGS@|${SYSTEM_LDFLAGS}|g" \
+	Makefile.in >>Makefile
