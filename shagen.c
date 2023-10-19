@@ -42,9 +42,8 @@ main(int argc, char **argv)
 	const char *domain, *account, *version;
 #ifdef HAVE_READPASSPHRASE
 	char master[128], repeat[128];
-#else
-	char *masterp, *repeatp;
 #endif
+	char *masterp, *repeatp;
 	unsigned char digest[SHA256_DIGEST_LENGTH];
 	char key[256];
 	char symbols[26+26+10] = 
