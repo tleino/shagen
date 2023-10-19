@@ -14,3 +14,15 @@ with the master passphrase and account details. The SHA256 gives
 us 256 bits to work with. We extract 224 bits for passwords and
 192 bits for passphrases. These bits are then mapped to symbol
 and word lists giving us roughly 77 bits passwords and passphrases.
+
+Security considerations:
+
+When compared to a traditional password vault, the advantage is
+we no longer need to care about encrypting, decrypting, backing up
+and copying the vault file, and the disadvantage is that the
+passwords and passphrases are derived from a master passphrase.
+
+This means, whoever has even one password or passphrase, can attempt
+to offline brute force the master passphrase, and if they succeed,
+they essentially get all the passwords and passphrases. However, if
+the master passphrase is strong enough, this is not a problem.
